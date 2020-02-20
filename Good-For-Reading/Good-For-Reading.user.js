@@ -14,6 +14,10 @@
 // @noframes
 // ==/UserScript==
 (function() {
+  if ($('body *').length <= 1 || $('body *').length == undefined) {
+    console.log($('body *'));
+    return 0;
+  }
   function addSidebarTags(jQ_sidebar) {
     function hlevel(DOM_hNode) {
       return Number.parseInt(DOM_hNode.tagName.slice(1));
