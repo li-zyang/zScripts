@@ -91,15 +91,15 @@
     align-content: start;
     align-items: start;
     grid-column-gap: 10px;
-    background: #f0f0f0;
+    background: #e0e0e0;
   }
   body > .page-content {
     grid-column: 2;
-    background: rgba(127, 127, 127, 0.1);
+    background: rgba(255, 255, 255, 0.3);
     padding: 10px 10px 10px 10px;
   }
   body > .side-bar {
-    background: rgba(127, 127, 127, 0.1);
+    background: rgba(255, 255, 255, 0.3);
     width: 100%;
     grid-column: 1;
     grid-row: 1;
