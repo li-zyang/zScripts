@@ -14,9 +14,21 @@
 // @noframes
 // ==/UserScript==
 (function() {
+  let excluded_url_pat = [];
+  let forced_url_pat = [];
   if ($('body *').length <= 1 || $('body *').length == undefined) {
-    console.log($('body *'));
     return 0;
+  }
+  if (excluded_url_pat.find(function(chkurl) {
+    return chkurl.test(location.href);
+  }) != undefined) {
+    return 0;
+  }
+  let page_included = false;
+  if (forced_url_pat.find(function(chkurl) {
+    return chkurl.test(location.href);
+  }) != undefined) {
+    page_included = true;
   }
   function addSidebarTags(jQ_sidebar) {
     function hlevel(DOM_hNode) {
@@ -47,8 +59,9 @@
       cata_element.attr('data-title-id', window.last_title_id);
       cata_element.click({ 'titleID': cata_element.attr('data-title-id'), 'element': cata_element },
         function(e) {
+          let target = $('.page-content *[data-title-id="' + e.data.titleID + '"]');
           $('body').animate({
-            'scrollTop': $('.page-content *[data-title-id="' + e.data.titleID + '"]').offset().top - 50
+            'scrollTop': target.offset().top - 50
           }, 500);
         }
       )
@@ -97,6 +110,7 @@
     grid-column: 2;
     background: rgba(255, 255, 255, 0.3);
     padding: 10px 10px 10px 10px;
+    overflow-x: scroll;
   }
   body > .side-bar {
     background: rgba(255, 255, 255, 0.3);
@@ -150,11 +164,16 @@
     white-space: pre;
   }
 `
-  console.log("body > div: ");
-  console.log($('body > div'))
-  console.log("body > table:first: ");
-  console.log($('body > table:first'));
-  if (!$('body > div').length && !$('body > table:first').length) {
+  if (!(
+      $('body > div').length ||
+      $('body > table:first').length ||
+      $('body > header').length ||
+      $('body > section').length ||
+      $('body > footer').length ||
+      $('body > nav').length ||
+      $('body > artical').length ||
+      $('body > aside').length
+      ) || page_included) {
     let pagecontent = $('<div class="page-content"></div>').html($('body').html());
     $('body > *').remove();
     $('body').append(pagecontent);
@@ -162,9 +181,7 @@
     let sidebar = $(`
 <div class="side-bar">
   <div class="side-bar-header">Catalogue</div>
-</div>`)
-    console.log('sidebar: ');
-    console.log(sidebar);
+</div>`);
     window.last_title_id = 0;
     addSidebarTags(sidebar);
     $('body').prepend(sidebar);
