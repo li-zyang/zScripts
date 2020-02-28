@@ -9,12 +9,17 @@
 // @description:zh-TW 調整舊式網頁（指那些幾乎沒有排版，直接用 <h1>、<p> 等等標簽從上到下堆下來的網頁）的排版，將内容寬度限制為適合閲讀的寬度，添加目錄側欄，點擊可以跳轉到對應位置。此脚本不影響“現代化的”網頁（至少我寫的時候是這麽想的，如果有誤傷，可以到 github 上告訴我）。
 // @author       阿昭
 // @require      https://cdn.bootcss.com/jquery/3.4.1/jquery.min.js
+// @require      http://lib.sinaapp.com/js/jquery/3.1.0/jquery-3.1.0.min.js
 // @include      *://*
 // @grant        none
 // @noframes
 // ==/UserScript==
 (function() {
-  let excluded_url_pat = [];
+  let excluded_url_pat = [
+    /https?:\/\/jwc.scnu.edu.cn\/.*/,
+    /https?:\/\/ssp.scnu.edu.cn\/.*/,
+    // 信息化部是真的非主流
+    ];
   let forced_url_pat = [];
   if ($('body *').length <= 1 || $('body *').length == undefined) {
     return 0;
@@ -119,6 +124,7 @@
     grid-row: 1;
     overflow: scroll;
     padding: 0px 0px 20px 0px;
+    /* position: fixed; */
   }
   body > .side-bar .side-bar-header {
     padding: 20px 10px 9px 10px;
@@ -172,7 +178,8 @@
       $('body > footer').length ||
       $('body > nav').length ||
       $('body > artical').length ||
-      $('body > aside').length
+      $('body > aside').length ||
+      $('body > form').length  // So, for the reason why many people like to get the whole page wrapped inside a large form, who knows ...
       ) || page_included) {
     let pagecontent = $('<div class="page-content"></div>').html($('body').html());
     $('body > *').remove();
