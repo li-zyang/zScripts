@@ -12,7 +12,7 @@ The page patched by Good-For-Reading:
 ![screenshot-patched](https://github.com/li-zyang/zScripts/raw/master/Good-For-Reading/Screenshot-patched.png)
 
 ## Release note
-|Version     |Date       |                                    |
+|Version     |Date       |What's new                          |
 |:-----------|:---------:|:-----------------------------------|
 |v1.0.0 beta |2020-02-20 |Firstly published this script       |
 |v1.0.1      |2020-03-12 |Fixed the bug problem of jquery conflict which makes some websites fails to load (#1)|
