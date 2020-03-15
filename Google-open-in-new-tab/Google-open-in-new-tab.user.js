@@ -9,7 +9,7 @@
 // @description:ZH-TW  點擊搜索結果中的連接時在新標籤頁中打開
 // @author       阿昭
 // @include      https://www.google.com/*
-// @require      http://lib.sinaapp.com/js/jquery/3.1.0/jquery-3.1.0.min.js
+// @require      https://cdn.staticfile.org/jquery/3.4.1/jquery.min.js
 // @grant        GM_setValue
 // @grant        GM_getValue
 // @noframes
