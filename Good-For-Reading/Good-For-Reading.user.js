@@ -15,7 +15,11 @@
 // @noframes
 // @note  v1.0.0 beta 2020-02-20  Firstly published this script
 // @note  v1.0.1      2020-03-12  Fixed the bug problem of jquery conflict which makes some websites fails to load (#1)
+// @note  v1.0.2      2020-03-16  Ignored the media viewer(e.g. **.mp4) & special pages (contains only one element)
 // ==/UserScript==
+
+// example: https://pubs.opengroup.org/onlinepubs/7908799/xsh/readdir.html
+
 $.noConflict();
 (function($) {
   let excluded_url_pat = [
@@ -172,17 +176,21 @@ $.noConflict();
     font-size: 0.9em;
     white-space: pre;
   }
-`
+  `
   if (!(
       $('body > div').length ||
-      $('body > table:first').length ||
+      $('body > table:first-child').length ||
       $('body > header').length ||
       $('body > section').length ||
       $('body > footer').length ||
       $('body > nav').length ||
       $('body > artical').length ||
       $('body > aside').length ||
-      $('body > form').length  // So, for the reason why many people like to get the whole page wrapped inside a large form, who knows ...
+      $('body > form').length ||
+      $('body > video:first-child').length ||
+      $('body > img:first-child').length ||
+      $('body > svg:first-child').length ||
+      $('body > *:first-child:only-child').length
       ) || page_included) {
     let pagecontent = $('<div class="page-content"></div>').html($('body').html());
     $('body > *').remove();
