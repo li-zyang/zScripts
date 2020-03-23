@@ -3,8 +3,8 @@
 // @name:zh-CN   旧式网页阅读优化
 // @name:zh-TW   舊式網頁閲讀優化
 // @namespace    https://github.com/li-zyang/
-// @version      1.0.2
-// @description  Limit the width of old-styled websites (which has it's text content expand across the whole wide window) and add a catalogue sidebar for a comfortble reading. This script does not affect those "modern" web pages (At least I tried to avoid that. If it fails, you can report the bug on github).
+// @version      1.0.3
+// @description  Limit the width of old-styled websites (which has it's text content expand across the whole wide window.GoodForReading) and add a catalogue sidebar for a comfortble reading. This script does not affect those "modern" web pages (At least I tried to avoid that. If it fails, you can report the bug on github).
 // @description:zh-CN 调整旧式网页（指那些几乎没有排版，直接用 <h1>、<p> 等等标签从上到下堆下来的网页）的排版，将内容宽度限制为适合阅读的宽度，添加目录侧栏，点击可以跳转到对应位置。此脚本不影响“现代化的”网页（至少我写的时候是这么想的，如果有误伤，可以到 github 上告诉我）。
 // @description:zh-TW 調整舊式網頁（指那些幾乎沒有排版，直接用 <h1>、<p> 等等標簽從上到下堆下來的網頁）的排版，將内容寬度限制為適合閲讀的寬度，添加目錄側欄，點擊可以跳轉到對應位置。此脚本不影響“現代化的”網頁（至少我寫的時候是這麽想的，如果有誤傷，可以到 github 上告訴我）。
 // @author       阿昭
@@ -16,12 +16,14 @@
 // @note  v1.0.0 beta 2020-02-20  Firstly published this script
 // @note  v1.0.1      2020-03-12  Fixed the bug problem of jquery conflict which makes some websites fails to load (#1)
 // @note  v1.0.2      2020-03-16  Ignored the media viewer(e.g. **.mp4) & special pages (contains only one element)
+// @note  v1.0.3      2020-03-23  Submit varibles to the real window.GoodForReading to better handling interactions
 // ==/UserScript==
 
 // example: https://pubs.opengroup.org/onlinepubs/7908799/xsh/readdir.html
 
 $.noConflict();
-(function($) {
+(function(window, $) {
+  window.GoodForReading = {};
   let excluded_url_pat = [
     /https?:\/\/jwc.scnu.edu.cn\/.*/,
     /https?:\/\/ssp.scnu.edu.cn\/.*/,
@@ -66,9 +68,9 @@ $.noConflict();
         cur_clevel--;
       }
       let cata_element = $('<a class="title-' + cur_clevel + '" href=javascript:void(0);></a>').text($(title).text().trim());
-      window.last_title_id++;
-      $(title).attr('data-title-id', window.last_title_id);
-      cata_element.attr('data-title-id', window.last_title_id);
+      window.GoodForReading.last_title_id++;
+      $(title).attr('data-title-id', window.GoodForReading.last_title_id);
+      cata_element.attr('data-title-id', window.GoodForReading.last_title_id);
       cata_element.click({ 'titleID': cata_element.attr('data-title-id'), 'element': cata_element },
         function(e) {
           let target = $('.page-content *[data-title-id="' + e.data.titleID + '"]');
@@ -200,8 +202,8 @@ $.noConflict();
 <div class="side-bar">
   <div class="side-bar-header">Catalogue</div>
 </div>`);
-    window.last_title_id = 0;
+    window.GoodForReading.last_title_id = 0;
     addSidebarTags(sidebar);
     $('body').prepend(sidebar);
   }
-})(jQuery);
+})(window.unsafeWindow, jQuery);
