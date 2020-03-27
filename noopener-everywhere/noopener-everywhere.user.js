@@ -3,7 +3,7 @@
 // @name:zh-CN   全员noopener
 // @name:zh-TW   全員noopener
 // @namespace    https://github.com/li-zyang
-// @version      0.1.0
+// @version      1.0.0
 // @description  open any hyperlinks with a noopener attribute
 // @description:zh-CN  使用 noopener 方式打开任何新窗口的链接
 // @description:zh-TW  使用 noopener 方式打開任何外部錨
@@ -22,6 +22,7 @@
 // @noframes
 // @run-at       document-end
 // @note         v0.1.0      2020-03-24  On testing
+// @note         v1.0.0      2020-03-27  First published
 // ==/UserScript==
 
 // => More metadata:
