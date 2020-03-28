@@ -27,3 +27,7 @@ rel="noopener" or rel="noreferrer".
 
 The most obvious effect is that the page loads much faster than that the 
 "noopener" is absent. 
+
+## Bug report & contribution
+* [Github repository](https://github.com/li-zyang/zScripts/tree/master/noopener-everywhere)
+* [greasyfork](https://greasyfork.org/en/scripts/398805-noopener-everywhere)
