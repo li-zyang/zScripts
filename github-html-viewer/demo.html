@@ -14,7 +14,7 @@
     通俗的讲，移动设备上的viewport就是设备的屏幕上能用来显示我们的网页的那一块区域，在具体一点，就是浏览器上(也可能是一个app中的webview)用来显示网页的那部分区域，但viewport又不局限于浏览器可视区域的大小，它可能比浏览器的可视区域要大，也可能比浏览器的可视区域要小。在默认情况下，一般来讲，移动设备上的viewport都是要大于浏览器可视区域的，这是因为考虑到移动设备的分辨率相对于桌面电脑来说都比较小，所以为了能在移动设备上正常显示那些传统的为桌面浏览器设计的网站，移动设备上的浏览器都会把自己默认的viewport设为980px或1024px（也可能是其它值，这个是由设备自己决定的），但带来的后果就是浏览器会出现横向滚动条，因为浏览器可视区域的宽度是比这个默认的viewport的宽度要小的。下图列出了一些设备上浏览器的默认viewport的宽度。
   </p>
   <p>
-    <img src="https://www.runoob.com/wp-content/uploads/2018/07/1532326250-2008-201407.png">
+    <img src="1532326250-2008-201407.png">
   </p>
   <hr>
   <h2>二、css中的1px并不等于设备的1px</h2>
@@ -35,7 +35,7 @@
     devicePixelRatio的测试结果：
   </p>
   <p>
-    <img src="https://www.runoob.com/wp-content/uploads/2018/07/1532326246-7319-201407.png">
+    <img src="1532326246-7319-201407.png">
   </p>
   <hr>
   <h2>三、PPK的关于三个viewport的理论</h2>
@@ -63,8 +63,8 @@
     Oprea mini 和 UC 8中无法正确获取。
   </p>
   <p>
-    <img src="https://www.runoob.com/wp-content/uploads/2018/07/1532326331-2895-201407.png">
-    <img src="https://www.runoob.com/wp-content/uploads/2018/07/1532326332-9414-201407.png">
+    <img src="1532326331-2895-201407.png">
+    <img src="1532326332-9414-201407.png">
   </p>
   <p>
     现在我们已经有两个viewport了：layout viewport 和 visual viewport。但浏览器觉得还不够，因为现在越来越多的网站都会为移动设备进行单独的设计，所以必须还要有一个能完美适配移动设备的viewport。所谓的完美适配指的是，首先不需要用户缩放和横向滚动条就能正常的查看网站的所有内容；第二，显示的文字的大小是合适，比如一段14px大小的文字，不会因为在一个高密度像素的屏幕里显示得太小而无法看清，理想的情况是这段14px的文字无论是在何种密度屏幕，何种分辨率下，显示出来的大小都是差不多的。当然，不只是文字，其他元素像图片什么的也是这个道理。ppk把这个viewport叫做
@@ -76,8 +76,8 @@
     iphone 屏幕的宽度。
   </p>
   <p>
-    <img src="https://www.runoob.com/wp-content/uploads/2018/07/1532326255-8442-201407.png">
-    <img src="https://www.runoob.com/wp-content/uploads/2018/07/1532326251-8306-201407.png">
+    <img src="1532326255-8442-201407.png">
+    <img src="1532326251-8306-201407.png">
   </p>
   <p>
     但是安卓设备就比较复杂了，有320px的，有360px的，有384px的等等，关于不同的设备ideal viewport的宽度都为多少，可以到
@@ -179,7 +179,7 @@
     下图是这句代码在各大移动端浏览器上的测试结果：
   </p>
   <p>
-    <img src="https://www.runoob.com/wp-content/uploads/2018/07/1532326253-5872-201407.png">
+    <img src="1532326253-5872-201407.png">
   </p>
   <p>
     可以看到通过width=device-width，所有浏览器都能把当前的viewport宽度变成ideal viewport的宽度，但要注意的是，在iphone和ipad上，无论是竖屏还是横屏，宽度都是竖屏时ideal
@@ -209,7 +209,7 @@
     </font>
   </p>
   <p>
-    <img src="https://www.runoob.com/wp-content/uploads/2018/07/1532326334-7326-201407.png">
+    <img src="1532326334-7326-201407.png">
   </p>
   <p>
     测试结果表明 initial-scale=1 也能把当前的viewport宽度变成 ideal viewport 的宽度，但这次轮到了windows
