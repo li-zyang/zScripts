@@ -10,6 +10,7 @@
 // @author       阿昭
 // @include      https://github.com/*
 // @include      https://li-zyang.github.io/ghPreview/*
+// @include      *://127.0.0.1/ghPreview/*
 // @exclude      none
 // @require      https://cdn.staticfile.org/jquery/3.4.1/jquery.min.js
 // @grant        GM_setValue
@@ -528,6 +529,110 @@
     return false;
   }
   let isHTML = script.isHTML;
+
+  script.parseRelativeURL = function(raw) {
+    let unrequestableProtocols = ['about:', 'data:'];
+    let matchedProtocol = null; 
+    unrequestableProtocols.forEach(function(prefix) {
+      if (raw.startsWith(prefix)) matchedProtocol = prefix;
+    })
+    if (matchedProtocol) {
+      let _temp = raw.slice(6).split('?');
+      let pathname = _temp[0];
+      let search = '';
+      let hash = '';
+      if (_temp[1] && _temp != '') {
+        search = _temp[1];
+        _temp.shift();
+      }
+      _temp = _temp[0].split('#');
+      if (_temp[1] && _temp != '') {
+        hash = _temp[1];
+      }
+      return {
+        hash: hash,
+        host: '',
+        hostname: '',
+        href: raw,
+        origin: 'null',
+        pathname: pathname,
+        port: '',
+        protocol: matchedProtocol,
+        search: search,
+        username: '',
+        password: '',
+        searchParams: new URLSearchParams()
+      };
+    }
+    let fullPattern = /^(\w+:)?(\/\/[^\/\?#]+)?(\/?[^\?#]*)?(\?[^#]+)?(#.*)?/;
+    let matched = null;
+    if (matched = fullPattern.exec(raw)) {
+      for (let i = 0; i < matched.length; i++) {
+        let urlItem = matched[i];
+        if (urlItem == undefined) {
+          matched[i] = null;
+        }
+      }
+      let username = null;
+      let hostname = null;
+      let port = null;
+      if (matched[2]) {
+        let _temp = matched[2].slice(2).split(':');
+        if (_temp.length != 1) {
+          port = _temp[1];
+        } else {
+          port = '';
+        }
+        _temp = _temp[0].split('@')
+        if (_temp.length != 1) {
+          username = _temp[0];
+          hostname = _temp[1];
+        } else {
+          username = '';
+          hostname = _temp[0];
+        }
+      }
+      return {
+        hash: (matched[5] || ''),
+        host: (hostname) ? (hostname + ((port == '' || port == null) ? '' : (':' + port))) : null,
+        hostname: hostname,
+        href: raw,
+        origin: (matched[1] && hostname) ? (matched[1] + '//' + hostname + ((port == '' || port == null) ? '' : ':' + port)) : null,
+        password: '',
+        pathname: hostname ? (matched[3] || '/') : matched[3],
+        port: hostname ? (port || '') : port,
+        protocol: matched[1],
+        search: (hostname || matched[3]) ? (matched[4] || '') : matched[4],
+        searchParams: new URLSearchParams(),
+        username: username
+      };
+    }
+  }
+  let parseRelativeURL = script.parseRelativeURL;
+
+  script.setURLBase = function(relativeURL, base) {
+    let res = parseRelativeURL(relativeURL);
+    let parsedBase = parseRelativeURL(base);
+    // let keys = Object.keys(res);
+    let orderedProperty = ['protocol', 'hostname', 'host', 'origin', 'pathname', 'search', 'hash'];
+    for (let i = 0; i < orderedProperty.length; i++) {
+      let key = orderedProperty[i];
+      if (res[key] == null) {
+        res[key] = parsedBase[key];
+      } else {
+        break;
+      }
+    }
+    if (res.pathname != null && parsedBase.origin != 'null' && !res.pathname.startsWith('/')) {
+      if (parsedBase.pathname) {
+        res.pathname = parsedBase.pathname + (parsedBase.pathname.endsWith('/') ? '' : '/') + res.pathname;
+      } else {
+        res.pathname = '/' + res.pathname;
+      }
+    }
+    return res.protocol + (res.origin == 'null' ? '' : '//') + (res.username || '') + ((res.username && res.username != '') ? '@' : '') + res.host + res.pathname + res.search + res.hash;
+  }
+  let setURLBase = script.setURLBase;
   
   // ==============================================================================
   
@@ -581,33 +686,28 @@
           if (type == 'file' && isHTML(filename)) {
             console.log(filename + ': html file found');
             let repoInfo = getRepoInfo();
-            if (script.connectionState && script.connectionState.raw.time != -1) {
-              let search = new Search();
-              search.originalUrl = location.toString();
-              search.repo = repoInfo.fullName;
-              search.branch = repoInfo.branch;
-              search.file = `${repoInfo.cwd}${filename}`.slice(1);    // remove '/'
-              search.user = repoInfo.user;
-              search.avatar_url = repoInfo.avatar;
-              search.contentID = genID();
-              if (repoInfo.permission == 'public') {
-                // https://raw.githubusercontent.com/li-zyang/li-zyang.github.io/master/action.js
-                search.source = `https://raw.githubusercontent.com/${repoInfo.fullName}/${repoInfo.branch}${repoInfo.cwd}${filename}`;
-                search.provider = 'none';
-              } else {
-                // https://github.com/li-zyang/test/raw/master/about.html
-                // get auth token after redirect
-                search.source = `https://github.com/${repoInfo.fullName}/raw/${repoInfo.branch}${repoInfo.cwd}${filename}`;
-                search.provider = 'userscript';
-              }
-              let newUrl = new URL('https://li-zyang.github.io/ghPreview/');
-              newUrl.search = search.toString();
-              $originalLink.attr('href', newUrl.toString());
-              $content.append($(`<span class="ghPreview ghPreview-icon-wrapper"><a class="ghPreview ghPreview-view-code ghPreview-icon" href="${originalHref}">${svgs.code}</a></span>`));
+            let search = new Search();
+            search.originalUrl = location.toString();
+            search.repo = repoInfo.fullName;
+            search.branch = repoInfo.branch;
+            search.file = `${repoInfo.cwd}${filename}`.slice(1);    // remove '/'
+            search.user = repoInfo.user;
+            search.avatar_url = repoInfo.avatar;
+            search.contentID = genID();
+            if (repoInfo.permission == 'public') {
+              // https://cdn.jsdelivr.net/gh/user/repo@branch/file
+              search.source = `https://cdn.jsdelivr.net/gh/${repoInfo.fullName}@${repoInfo.branch}${repoInfo.cwd}${filename}`;
+              search.provider = 'none';
             } else {
-              $originalLink.attr('href', originalHref + ((originalHref.indexOf('?') != -1) ? '&' : '?') + 'ghPreviewAction=previewCurrent');
-              $content.append($(`<span class="ghPreview ghPreview-icon-wrapper"><a class="ghPreview ghPreview-view-code ghPreview-icon" href="${originalHref}">${svgs.code}</a></span>`));
+              // https://github.com/li-zyang/test/raw/master/about.html
+              // get auth token after redirect
+              search.source = `https://github.com/${repoInfo.fullName}/raw/${repoInfo.branch}${repoInfo.cwd}${filename}`;
+              search.provider = 'userscript';
             }
+            let newUrl = new URL('https://li-zyang.github.io/ghPreview/');
+            newUrl.search = search.toString();
+            $originalLink.attr('href', newUrl.toString());
+            $content.append($(`<span class="ghPreview ghPreview-icon-wrapper"><a class="ghPreview ghPreview-view-code ghPreview-icon" href="${originalHref}">${svgs.code}</a></span>`));
             modified = true;
           }
         }
@@ -716,41 +816,208 @@
     }, 1000, 1500).start();
   });
   
-  // ===================================================================================
+  // ========================= END github.com ==========================
   
-  } else if (/^https:\/\/li-zyang.github.io\/ghPreview\/.*/.test(location.toString())) {
+  } else if (
+    /^https:\/\/li-zyang.github.io\/ghPreview\/.*/.test(location.toString()) ||
+    /^[^:]+:\/\/127.0.0.1\/ghPreview\/.*/.test(location.toString())
+  ) {
+  
+  script.GM_xmlhttpRequest = GM_xmlhttpRequest;
   
   console.log('working on render page');
 
   let search = new Search(location.search);
   if (search.provider == 'userscript') {
-    let storedSource = GM_getValue('pageSource');
-    if (storedSource && storedSource.contentID == search.contentID) {
-      console.log('stored source code found, contentID = ' + storedSource.contentID);
-      wait(() => window.sourceInfo, 5000).then(function() {
-        window.sourceInfo.pageSource = storedSource.code;
-      }).catch(function(e) {
-        console.error(e);
-      });
-    } else {
-      console.log('no page source stored, try fetch it from ' + search.source);
-      GM_xmlhttpRequest({
-        method: 'GET',
-        url: search.source,
-        revalidate: true,
-        timeout: 5000,
-        onload: function(result) {
-          window.sourceInfo.pageSource = result.responseText;
-        },
-        onerror: function(e) {
-          console.error('Error when downloading ' + search.source, e);
-        },
-        ontimeout: function(e) {
-          console.error('Timeout exceeded when downloading ' + search.source, e);
+    let loader = new Promise(function(resolve, reject) {
+      let storedSource = GM_getValue('pageSource');
+      if (storedSource && storedSource.contentID == search.contentID) {
+        console.log('stored source code found, contentID = ' + storedSource.contentID);
+        wait(() => window.sourceInfo, 5000).then(function() {
+          // window.sourceInfo.pageSource = storedSource.code;
+          resolve(storedSource.code);
+        }).catch(function(e) {
+          // console.error(e);
+          reject(e);
+        });
+      } else {
+        console.log('no page source stored, try fetching it from ' + search.source);
+        GM_xmlhttpRequest({
+          method: 'GET',
+          url: search.source,
+          revalidate: true,
+          timeout: 5000,
+          onload: function(result) {
+            console.log('successfully fetched page source');
+            resolve(result.responseText);
+          },
+          onerror: function(e) {
+            console.error('Error when downloading ' + search.source, e);
+            reject(e);
+          },
+          ontimeout: function(e) {
+            console.error('Timeout exceeded when downloading ' + search.source, e);
+            reject(e);
+          }
+        });
+      }
+    })
+    .then(function(data) {return new Promise(function(resolve, reject) {
+      console.log('now replace the sources');
+      let parser = new DOMParser();
+      let doc = parser.parseFromString(data, 'text/html');
+      let requestCount = 0;
+      let add  = function() {
+        requestCount++
+      };
+      let done = function() {
+        requestCount--;
+        console.log('one request is done, now there are ' + requestCount + ' remaining.');
+        if (requestCount == 0) {
+          resolve(doc);
         }
-      });
-    }
+      };
+      let contentScripts = doc.querySelectorAll('script[src]');
+      for (let i = 0; i < contentScripts.length; i++) {
+        let scriptNode = contentScripts[i];
+        console.log(`script source: ${scriptNode.attributes.src.value}`);
+        let parsedSource = parseRelativeURL(scriptNode.attributes.src.value);
+        if (!parsedSource.hostname) {
+          let absoluteUrl = setURLBase(
+            scriptNode.attributes.src.value, 
+            `https://github.com/${search.repo}/raw/${search.branch}/${search.file.replace(/[^\/]*$/, '')}`
+          );
+          console.log('starting a download from ' + absoluteUrl);
+          GM_xmlhttpRequest({
+            method: 'GET',
+            url: absoluteUrl,
+            timeout: 5000,
+            onerror: function(e) {
+              console.error('Error when fetching ' + absoluteUrl, e);
+              done();
+            },
+            ontimeout: function(e) {
+              console.error('Timed out when fetching ' + absoluteUrl);
+              done();
+            },
+            onload: function(result) {
+              console.log('successfully fetched script from ' + result.finalUrl);
+              scriptNode.removeAttribute('src');
+              scriptNode.innerHTML = result.responseText;
+              done();
+            }
+          });
+          add();
+        }
+      }
+      let externalStyles = doc.querySelectorAll('link[rel="stylesheet"][href]');
+      for (let i = 0; i < externalStyles.length; i++) {
+        let linkNode = externalStyles[i];
+        console.log(`external style: ${linkNode.attributes.href.value}`);
+        let parsedSource = parseRelativeURL(linkNode.attributes.href.value);
+        if (!parsedSource.hostname) {
+          let absoluteUrl = setURLBase(
+            linkNode.attributes.href.value,
+            `https://github.com/${search.repo}/raw/${search.branch}/${search.file.replace(/[^\/]*$/, '')}`
+          );
+          console.log('starting a download from ' + absoluteUrl);
+          GM_xmlhttpRequest({
+            method: 'GET',
+            url: absoluteUrl,
+            timeout: 5000,
+            onerror: function(e) {
+              console.error('Error when fetching ' + absoluteUrl, e);
+              done();
+            },
+            ontimeout: function(e) {
+              console.error('Timed out when fetching ' + absoluteUrl);
+              done();
+            },
+            onload: function(result) {
+              console.log('successfully fetched external stylesheet from ' + result.finalUrl);
+              let styleNode = doc.createElement('style');
+              styleNode.innerHTML = result.responseText;
+              linkNode.parentElement.replaceChild(styleNode, linkNode);
+              done();
+            }
+          });
+          add();
+        }
+      }
+      let contentImages = doc.querySelectorAll('img[src]');
+      for (let i = 0; i < contentImages.length; i++) {
+        let imgNode = contentImages[i];
+        console.log(`img source: ${imgNode.attributes.src.value}`);
+        let parsedSource = parseRelativeURL(imgNode.attributes.src.value);
+        if (!parsedSource.hostname) {
+          let absoluteUrl = setURLBase(
+            imgNode.attributes.src.value,
+            `https://github.com/${search.repo}/raw/${search.branch}/${search.file.replace(/[^\/]*$/, '')}`
+          );
+          console.log('requesting a HEAD to ' + absoluteUrl);
+          GM_xmlhttpRequest({
+            method: 'HEAD',
+            url: absoluteUrl,
+            timeout: 5000,
+            onerror: function(e) {
+              console.error('Error when heading ' + absoluteUrl, e);
+              done();
+            },
+            ontimeout: function(e) {
+              console.error('Timed out when heading ' + absoluteUrl);
+              done();
+            },
+            onload: function(result) {
+              console.log('successfully got the auth-ed url of image: ' + result.finalUrl);
+              imgNode.setAttribute('src', result.finalUrl);
+              done();
+            }
+          });
+          add();
+        }
+      }
+      let mediaSources = doc.querySelectorAll('source[src]');
+      for (let i = 0; i < mediaSources.length; i++) {
+        let sourceNode = mediaSources[i];
+        console.log(`video source: ${sourceNode.attributes.src.value}`);
+        let parsedSource = parseRelativeURL(sourceNode.attributes.src.value);
+        if (!parsedSource.hostname) {
+          let absoluteUrl = setURLBase(
+            sourceNode.attributes.src.value,
+            `https://github.com/${search.repo}/raw/${search.branch}/${search.file.replace(/[^\/]*$/, '')}`
+          );
+          console.log('requesting a HEAD to ' + absoluteUrl);
+          GM_xmlhttpRequest({
+            method: 'HEAD',
+            url: absoluteUrl,
+            timeout: 5000,
+            onerror: function(e) {
+              console.error('Error when heading ' + absoluteUrl, e);
+              done();
+            },
+            ontimeout: function(e) {
+              console.error('Timed out when heading ' + absoluteUrl);
+              done();
+            },
+            onload: function(result) {
+              console.log('successfully got the auth-ed url of media source: ' + result.finalUrl);
+              sourceNode.setAttribute('src', result.finalUrl);
+              done();
+            }
+          });
+          add();
+        }
+      }
+      if (requestCount == 0) {
+        resolve(doc);
+      }
+    })})
+    .then(function(doc) {
+      window.sourceInfo.pageSource = '<!DOCTYPE html>\n' + doc.documentElement.outerHTML;
+    });
   }
+
+  // ===== END li-zyang.github.io/ghPreview | 127.0.0.1/ghPreview ======
     
   }
   
