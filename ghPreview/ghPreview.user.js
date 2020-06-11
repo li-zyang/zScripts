@@ -3,7 +3,7 @@
 // @name:ZH-CN   Github HTML 预览
 // @name:ZH-TW   Github HTML 預覽
 // @namespace    https://github.com/li-zyang
-// @version      0.1.0
+// @version      0.1.1
 // @description  Render HTML files in Github
 // @description:ZH-CN  渲染 Github 中的 HTML 文档
 // @description:ZH-TW  渲染 Github 中的 HTML 文檔
@@ -29,7 +29,8 @@
 // @noframes
 // @run-at       document-start
 // @icon         https://github.githubassets.com/pinned-octocat.svg
-// @note         v1.0.0      1970-01-01  Add your release notes here.
+// @note         v0.1.0      2020-06-11  First finished the available one, tests & improvements & documention needed, however.
+// @note         v0.1.1      2020-06-12  Extract the render site definition out; disabled major of console.log(); code neaten.
 // ==/UserScript==
 
 // => More metadata:
@@ -45,10 +46,10 @@
 (function(window, $) {
   'use strict';
   
-  console.log('FUCK THE CONTENT SECURITY POLICY');
-  
   window.ghPreviewJS = {};
   let script = ghPreviewJS;
+
+  script.renderSite = 'https://li-zyang.github.io/ghPreview/';
   
   script.TimeoutError = function(what) {
     Error.call(this, what);
@@ -184,6 +185,7 @@
       </body>
       </html>
     `));
+    reviewWindow.document.close();
   }
   let reviewCode = script.reviewCode;
 
@@ -236,9 +238,9 @@
   let Search = script.Search;
 
   script.Search.prototype.careAbout = 
-    ['originalUrl', 'source', 'repo', 'file', 'user', 
-     'avatar_url', 'authenticity_token', 'timestamp', 
-     'timestamp_secret', 'branch', 'provider', 'contentID'];
+    ['originalUrl', 'source', 'repo', 'file', 'user', 'avatar_url', 
+     'authenticity_token', 'timestamp', 'timestamp_secret', 'branch', 
+     'provider', 'contentID', 'permission'];
 
   script.Search.prototype.toString = function() {
     let keys = Object.keys(this);
@@ -442,31 +444,6 @@
   let svgs = script.svgs = {};
   svgs.code = `<svg class="ghPreview ghPreview-icon-svg" t="1591461488877" class="icon" viewBox="0 0 1025 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="7795" width="512" height="512"><path d="M293.0688 755.2c-12.0832 0-24.2688-4.2496-33.9968-12.9024L0 512l273.4592-243.0976C294.5536 250.2144 326.912 252.0064 345.7024 273.152c18.7904 21.1456 16.896 53.504-4.2496 72.2944L154.112 512l172.9536 153.7024c21.1456 18.7904 23.04 51.1488 4.2496 72.2944C321.2288 749.4144 307.1488 755.2 293.0688 755.2zM751.0528 755.0976 1024.512 512l-259.072-230.2976c-21.1456-18.7904-53.504-16.896-72.2432 4.2496-18.7904 21.1456-16.896 53.504 4.2496 72.2944L870.4 512l-187.3408 166.5024c-21.1456 18.7904-23.04 51.1488-4.2496 72.2944C688.896 762.2144 702.976 768 717.056 768 729.1392 768 741.3248 763.7504 751.0528 755.0976zM511.5392 827.648l102.4-614.4c4.6592-27.904-14.1824-54.272-42.0864-58.9312-28.0064-4.7104-54.3232 14.1824-58.88 42.0864l-102.4 614.4c-4.6592 27.904 14.1824 54.272 42.0864 58.9312C455.5264 870.1952 458.2912 870.4 461.1072 870.4 485.6832 870.4 507.392 852.6336 511.5392 827.648z" p-id="7796"></path></svg>`;
   
-  script.extraStyle = dedentText(`
-    .ghPreview-icon-svg {
-      height: 14px;
-      width: auto;
-      fill: currentColor;
-    }
-    .ghPreview-icon-wrapper {
-      width: 20px;
-      display: inline-block;
-      height: 1em;
-    }
-    .ghPreview-icon {
-      position: absolute;
-      width: 20px;
-      height: 18px;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      border: 1px dashed currentColor !important;
-      border-radius: 3px;
-    }
-  `)
-  
-  $('head').append($(`<style class="ghPreview ghPreview-style">${script.extraStyle}</style>`));
-  
   script.removeEmptyLines = function(code) {
     let lines = code.split('\n');
     let i = 0; 
@@ -613,7 +590,6 @@
   script.setURLBase = function(relativeURL, base) {
     let res = parseRelativeURL(relativeURL);
     let parsedBase = parseRelativeURL(base);
-    // let keys = Object.keys(res);
     let orderedProperty = ['protocol', 'hostname', 'host', 'origin', 'pathname', 'search', 'hash'];
     for (let i = 0; i < orderedProperty.length; i++) {
       let key = orderedProperty[i];
@@ -638,7 +614,7 @@
   
   if (/^https:\/\/github.com\/.*/.test(location.toString())) {
   
-  console.log('working on github');
+  // console.log('working on github');
 
   script.processPage = async function() {
     // repository & file preview: div.repository-content
@@ -655,7 +631,6 @@
     if (!$('div.repository-content').length) {
       if (script.pageType != 'non-repo') {
         script.pageType = 'non-repo';
-        console.log('non-repository page, exiting');
       }
       return false;
     } else {
@@ -668,7 +643,7 @@
       });
       if ($('div.repository-content').find('.files').length) {
         if (script.pageType != 'directory') {
-          console.log('directory page detected');
+          // console.log('directory page detected');
           script.pageType = 'directory';
         }
         let $files = $('div.repository-content').find('.files');
@@ -684,7 +659,7 @@
             continue;
           }
           if (type == 'file' && isHTML(filename)) {
-            console.log(filename + ': html file found');
+            // console.log(filename + ': html file found');
             let repoInfo = getRepoInfo();
             let search = new Search();
             search.originalUrl = location.toString();
@@ -694,17 +669,16 @@
             search.user = repoInfo.user;
             search.avatar_url = repoInfo.avatar;
             search.contentID = genID();
+            search.permission = repoInfo.permission;
             if (repoInfo.permission == 'public') {
-              // https://cdn.jsdelivr.net/gh/user/repo@branch/file
               search.source = `https://cdn.jsdelivr.net/gh/${repoInfo.fullName}@${repoInfo.branch}${repoInfo.cwd}${filename}`;
               search.provider = 'none';
             } else {
-              // https://github.com/li-zyang/test/raw/master/about.html
               // get auth token after redirect
               search.source = `https://github.com/${repoInfo.fullName}/raw/${repoInfo.branch}${repoInfo.cwd}${filename}`;
               search.provider = 'userscript';
             }
-            let newUrl = new URL('https://li-zyang.github.io/ghPreview/');
+            let newUrl = new URL(script.renderSite);
             newUrl.search = search.toString();
             $originalLink.attr('href', newUrl.toString());
             $content.append($(`<span class="ghPreview ghPreview-icon-wrapper"><a class="ghPreview ghPreview-view-code ghPreview-icon" href="${originalHref}">${svgs.code}</a></span>`));
@@ -713,7 +687,7 @@
         }
       } else if ($('div.repository-content').find('.data').length) {
         if (script.pageType != 'file-preview') {
-          console.log('file previewing page detected');
+          // console.log('file previewing page detected');
           script.pageType = 'file-preview';
         }
         await wait(() => $($('.repository-content > .Box')[1]).find('.Box-header .text-mono').length, 1500);
@@ -728,13 +702,19 @@
           let search = new Search();
           search.originalUrl = location.toString().replace(/\?ghPreviewAction=([^&]+)&/, '?').replace(/(&|\?)ghPreviewAction=([^&]+)/, '');
           search.contentID = genID();
-          search.source = `https://github.com/${repoInfo.fullName}/raw/${repoInfo.branch}${repoInfo.cwd}${filename}`;
-          search.provider = 'userscript';
           search.repo = repoInfo.fullName;
           search.branch = repoInfo.branch;
           search.file = `${repoInfo.cwd}${filename}`.slice(1);
           search.user = repoInfo.user;
           search.avatar_url = repoInfo.avatar;
+          search.permission = repoInfo.permission;
+          if (repoInfo.permission == 'public') {
+            search.source = `https://cdn.jsdelivr.net/gh/${repoInfo.fullName}@${repoInfo.branch}${repoInfo.cwd}${filename}`;
+            search.provider = 'none';
+          } else {
+            search.source = `https://github.com/${repoInfo.fullName}/raw/${repoInfo.branch}${repoInfo.cwd}${filename}`;
+            search.provider = 'userscript';
+          }
           let action = '';
           try {
             action = /ghPreviewAction=([^&]+)/.exec(location.search)[1];
@@ -752,23 +732,25 @@
                 code: sourceCode,
                 contentID: search.contentID
               });
-              console.log('ready to jump ' + 'https://li-zyang.github.io/ghPreview/' + search.toString());
+              console.log('ready to jump ' + script.renderSite + search.toString());
               try{
-                location.replace('https://li-zyang.github.io/ghPreview/' + search.toString());
+                location.replace(script.renderSite + search.toString());
               } catch(e) {
-                location.assign('https://li-zyang.github.io/ghPreview/' + search.toString());
+                location.assign(script.renderSite + search.toString());
               }
             }
           }
-          let $btngroup = $('.repository-content .breadcrumb + div.BtnGroup');
+          let $btngroup = $($('.repository-content > .Box')[1]).find('.BtnGroup');
           if (!$btngroup.find('.ghPreview').length) {
             $btngroup.prepend(`<a class="ghPreview ghPreview-btn ghPreview-previewCurrent btn btn-sm BtnGroup-item">Preview</a>`);
             $btngroup.find('.ghPreview-previewCurrent').on('click', function() {
-              GM_setValue('pageSource', {
-                code: sourceCode,
-                contentID: search.contentID
-              });
-              location = 'https://li-zyang.github.io/ghPreview/' + search.toString();
+              if (search.provider == 'userscript') {
+                GM_setValue('pageSource', {
+                  code: sourceCode,
+                  contentID: search.contentID
+                });
+              }
+              location = script.renderSite + search.toString();
             });
             modified = true;
           }
@@ -785,17 +767,41 @@
   }
 
   wait(() => $('.Progress').length).then(async function() {
-    console.log("ghPreview's processing page");
+    // console.log("ghPreview's processing page");
+    script.extraStyle = dedentText(`
+      .ghPreview-icon-svg {
+        height: 14px;
+        width: auto;
+        fill: currentColor;
+      }
+      .ghPreview-icon-wrapper {
+        width: 20px;
+        display: inline-block;
+        height: 1em;
+      }
+      .ghPreview-icon {
+        position: absolute;
+        width: 20px;
+        height: 18px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        border: 1px dashed currentColor !important;
+        border-radius: 3px;
+      }
+    `);
+    $('head').append($(`<style class="ghPreview ghPreview-style">${script.extraStyle}</style>`));
     let prevConnectionState = GM_getValue('connectionState');
     if (prevConnectionState != undefined) {
-      console.log('connection state:', {...prevConnectionState});
+      // console.log('connection state:', {...prevConnectionState});
       script.connectionState = prevConnectionState;
     }
+    /*
     testConnection().then(function(result) {
       script.connectionState = result;
-      console.log('storing connection state');
+      // console.log('storing connection state');
       GM_setValue('connectionState', result);
-    });
+    }); */
     wait(() => $('.application-main').length).then(function() {
       script.processPage();
     });
@@ -818,12 +824,11 @@
   
   // ========================= END github.com ==========================
   
+  // if you want to use your own site, the following contition should also be modified
   } else if (
     /^https:\/\/li-zyang.github.io\/ghPreview\/.*/.test(location.toString()) ||
     /^[^:]+:\/\/127.0.0.1\/ghPreview\/.*/.test(location.toString())
   ) {
-  
-  script.GM_xmlhttpRequest = GM_xmlhttpRequest;
   
   console.log('working on render page');
 
@@ -834,10 +839,8 @@
       if (storedSource && storedSource.contentID == search.contentID) {
         console.log('stored source code found, contentID = ' + storedSource.contentID);
         wait(() => window.sourceInfo, 5000).then(function() {
-          // window.sourceInfo.pageSource = storedSource.code;
           resolve(storedSource.code);
         }).catch(function(e) {
-          // console.error(e);
           reject(e);
         });
       } else {
@@ -856,7 +859,7 @@
             reject(e);
           },
           ontimeout: function(e) {
-            console.error('Timeout exceeded when downloading ' + search.source, e);
+            console.error('Timeout exceeded when downloading ' + search.source);
             reject(e);
           }
         });
