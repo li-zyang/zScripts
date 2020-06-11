@@ -31,6 +31,7 @@ document after it is loaded.</sub></sup>
 by <a href="https://www.jsdelivr.com/" rel="noopener">jsDelivr</a></sub></sup>  
 
 ## Installation
+**[GreasyFork protal](https://greasyfork.org/en/scripts/405106-ghpreview)**  
 Since Github set a ~~crazily~~ limitative [content security policy](https://developer.mozilla.org/en-US/docs/Web/HTTP/CSP), 
 and the Firefox weirdly forbids the script scripts from extensions too, The
 script only works with [Tampermonkey's latest beta version](https://www.tampermonkey.net/) for 
