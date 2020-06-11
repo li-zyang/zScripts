@@ -1,7 +1,7 @@
 # ghPreview
 Render HTML files in Github  
 
-![Screenshot](src/Snipaste_2020-06-11_09-52-41.png)
+![Screenshot](https://github.com/li-zyang/zScripts/raw/master/ghPreview/src/Snipaste_2020-06-11_09-52-41.png)
 
 ## Features
 ✓ Relative URL<sup>[1]</sup>  
@@ -46,14 +46,14 @@ as usual.
         Migrate the scripts and configurations by exporting and 
         importing them in the "Utilities" tab if you need to  
         <br>
-        <img src="src/Snipaste_2020-06-11_11-23-05.png" alt="Tampermonkey Utilities tab screenshot" />
+        <img src="https://github.com/li-zyang/zScripts/raw/master/ghPreview/src/Snipaste_2020-06-11_11-23-05.png" alt="Tampermonkey Utilities tab screenshot" />
       </li>
       <li>Use the BETA version to install this script</li>
       <li>
         In the "Security" section, set the "Modify existing content 
         security policy (CSP) headers" option to "Remove Entirely"  
         <br>
-        <img src="src/Snipaste_2020-06-11_11-34-24.png" alt="Tampermonkey Security section screenshot" />
+        <img src="https://github.com/li-zyang/zScripts/raw/master/ghPreview/src/Snipaste_2020-06-11_11-34-24.png" alt="Tampermonkey Security section screenshot" />
       </li>
       <li>Add the websites to keep the CSP headers if you need to</li>
       <li>done.</li>
@@ -70,11 +70,11 @@ modified to the renderer page. Click it and you will see it rendered.
 The original behaviour (viewing the source code) can be obtained by 
 clicking the small "view source code" icon after it.  
 
-![Repository Screenshot](src/Snipaste_2020-06-11_11-54-34.png)
+![Repository Screenshot](https://github.com/li-zyang/zScripts/raw/master/ghPreview/src/Snipaste_2020-06-11_11-54-34.png)
 
 There is also a "Preview" button in the source code previewing page  
 
-![Source Code Previewing Page Screenshot](src/Snipaste_2020-06-11_12-03-42.png)
+![Source Code Previewing Page Screenshot](https://github.com/li-zyang/zScripts/raw/master/ghPreview/src/Snipaste_2020-06-11_12-03-42.png)
 which also leads to the render page.  
 
 ### Deploy Elsewhere
