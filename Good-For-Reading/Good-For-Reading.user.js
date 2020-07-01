@@ -30,9 +30,13 @@ $.noConflict();
     /https?:\/\/jwc.scnu.edu.cn\/.*/,
     /https?:\/\/ssp.scnu.edu.cn\/.*/,
     // 信息化部是真的非主流
+    /ftps?:\/\/.*/,
+    /https?:\/\/code.opensource.huaweicloud.com\/?.*/,
+    /https?:\/\/(\w|-)+\.worktile.com\/files\/.*/
     ];
   let forced_url_pat = [
-    /https?:\/\/man.openbsd.org\/.*/
+    /https?:\/\/man.openbsd.org\/.*/,
+    /https?:\/\/man7.org\/.*/
   ];
   if ($('body *').length <= 1 || $('body *').length == undefined) {
     return 0;
