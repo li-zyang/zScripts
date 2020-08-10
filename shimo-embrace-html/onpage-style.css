@@ -1,0 +1,11 @@
+iframe.shimo-embrace-html-js {
+  position: fixed;
+  --width: 980px;
+  --height: 75vh;
+  width: var(--width);
+  height: var(--height);
+  top: calc((100vh - var(--height)) / 2);
+  left: calc((100vw - var(--width)) / 2);
+  background: #ffffff;
+  z-index: 65536;
+}

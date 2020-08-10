@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <!-- defaults -->
+  <meta charset="UTF-8">
+  <meta name="format-detection" content="telephone=no, email=no">
+
+  <!-- page config -->
+  <title>[SET[-this.docTitle-]]</title>
+  <link rel="icon" type="image/png" href="[SET[-this.docIcon-]]" sizes="192x192">
+  <link rel="apple-touch-icon" href="[SET[-this.docIcon-]]" sizes="180x180">
+  <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+
+  <!-- search infomation -->
+  <meta name="author" content="">
+  <meta name="keywords" content="">
+  <meta name="description" content="">
+  <meta name="robots" content="[SET[-this.docRobotInstruction-]]">
+
+  <!-- sharing behaviour -->
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="[SET[-this.docTitle-]]">
+  <meta property="og:description" content="">
+  <meta property="og:img" content="[SET[-this.docIcon-]]">
+  <meta property="og:url" content="">
+
+  <!-- mobile browser config -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="[SET[-this.docTitle-]]">
+
+  <!-- stylesheets & external scripts -->
+</head>
+
+<body>
+  <div class="doc-root">
+    <div class="doc-title-wrapper">
+      <input value="[SET[-this.docTitle-]]" class="doc-title" placeholder="无标题" maxlength="100" spellcheck="false" disabled="disabled"></input>
+    </div>
+    <div class="doc-body">
+      [SET[-this.docBody-]]
+    </div>
+  </div>
+</body>
+
+<!--
+  required data:
+  + docTitle
+  + docIcon
+  - docAuthor  * hard to implement for now (Some APIs may used & maybe slow)
+  + docRobotInstruction
+  + docBody
+  -->
+
+</html>
