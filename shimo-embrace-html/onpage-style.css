@@ -1,11 +1,124 @@
-iframe.shimo-embrace-html-js {
+iframe.sehJS {
   position: fixed;
   --width: 980px;
   --height: 75vh;
   width: var(--width);
   height: var(--height);
-  top: calc((100vh - var(--height)) / 2);
+  top: 100vw;
+  /* top: calc((100vh - var(--height)) / 2); */
   left: calc((100vw - var(--width)) / 2);
   background: #ffffff;
   z-index: 65536;
+}
+.sehJS-text-receptor {
+  position: fixed;
+  left: 100vw;
+  top: 100vh;
+  margin: 0;
+  padding: 0;
+  border: none;
+  outline: none;
+  width: auto;
+  height: auto;
+  white-space: pre;
+}
+.sehJS-console-wrapper {
+  position: relative;
+  overflow: scroll;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+}
+.sehJS-console {
+  line-height: var(--line-height);
+  min-height: 100%;
+  width: 100%;
+  left: 0px;
+  bottom: 0px;
+}
+.sehJS-console span,
+.sehJS-console strong,
+.sehJS-console em {
+  white-space: pre-wrap;
+}
+.sehJS-log-wrapper,
+.sehJS-warn-wrapper,
+.sehJS-error-wrapper,
+.sehJS-info-wrapper {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: var(--line-height);
+}
+.sehJS-warn-wrapper {
+  background: var(--warn-background);
+  color: var(--warn-color);
+}
+.sehJS-error-wrapper {
+  background: var(--error-background);
+  color: var(--error-color);
+}
+.sehJS-info-wrapper {
+  background: var(--info-background);
+  color: var(--info-color);
+}
+
+.sehJS-emphasis {
+  font-style: italic;
+  letter-spacing: var(--em-letter-spacing);
+}
+.sehJS-bold {
+  font-weight: bolder;
+  letter-spacing: var(--bold-letter-spacing);
+}
+.sehJS-console-link {
+  font-style: italic;
+  text-decoration: none;
+}
+.sehJS-console-link:hover {
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+}
+.sehJS-style-ent,
+.sehJS-style-slf {
+  color: #22863a;
+}
+.sehJS-style-cl, 
+.sehJS-style-s .sehJS-style-v {
+  color: #005cc5;
+}
+.sehJS-style-pds, 
+.sehJS-style-s, 
+.sehJS-style-s .sehJS-style-pse .sehJS-style-s1, 
+.sehJS-style-sr, 
+.sehJS-style-sr .sehJS-style-cce, 
+.sehJS-style-sr .sehJS-style-sra, 
+.sehJS-style-sr .sehJS-style-sre,
+.sehJS-native {
+  color: #032f62;
+}
+.sehJS-style-c {
+  color: #6a737d;
+}
+.sehJS-style-e, 
+.sehJS-style-en,
+.sehJS-style-esc {
+  color: #6f42c1;
+}
+.sehJS-style-k {
+  color: #d73a49;
+}
+.sehJS-style-smw, 
+.sehJS-style-v {
+  color: #e36209;
+}
+.sehJS-style-e, 
+.sehJS-style-en {
+  color: #6f42c1;
+}
+.sehJS-style-err {
+  color: #c0000f;
+}
+.sehJS-call-stack,
+.sehJS-style-kos {
+  color: #24292e;
 }
