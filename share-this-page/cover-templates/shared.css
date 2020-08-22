@@ -1,0 +1,38 @@
+.cover {
+  background: #ffffff;
+  border: 2px solid #f0f0f0;
+  border-radius: 5px;
+  overflow: hidden;
+  width: 400px;
+  font-family: "Source Han Sans SC", source-han-sans-simplified-c;
+}
+.cover > table {
+  width: 100%;
+  height: 100%;
+  border-collapse: collapse;
+}
+.cover > table td {
+  padding: 0;
+}
+.mask {
+  background: rgba(0, 0, 0, 0.5);
+  width: 100%;
+  height: 100%;
+  left: 0px;
+  top: 0px;
+}
+.overlay-container * {
+  position: absolute;
+}
+.overlay-container .icon {
+  --width: 32px;
+  --height: 32px;
+  fill: #fafafa;
+  width: var(--width);
+  height: var(--height);
+}
+.center-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
