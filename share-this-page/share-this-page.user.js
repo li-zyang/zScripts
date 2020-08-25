@@ -1,14 +1,13 @@
 // ==UserScript==
 // @name         share-this-page
 // @namespace    https://github.com/li-zyang
-// @version      0.1.0
+// @version      0.1.1
 // @description  Generate sharing cover for webpage
 // @author       阿昭
 // @include      *//*
 // @require      https://cdn.staticfile.org/jquery/3.4.1/jquery.min.js
-// @resource     artical-cover-template  http://127.0.0.1/idlery/cover-templates/artical-cover-template.html
-// @resource     audio-cover-template    http://127.0.0.1/idlery/cover-templates/audio-cover-template.html
-// @resource     shared.css              http://127.0.0.1/idlery/cover-templates/shared.css
+// @resource     artical-cover-template  http://127.0.0.1/share-this-page/artical-cover-template.html
+// @resource     audio-cover-template    http://127.0.0.1/share-this-page/audio-cover-template.html
 // @grant        GM_setValue
 // @grant        GM_getValue
 // @grant        GM_listValues
@@ -55,7 +54,6 @@
 
   s.articalCoverTemplate = GM_getResourceText('artical-cover-template');
   s.audioCoverTemplate   = GM_getResourceText('audio-cover-template');
-  s.sharedCSS            = GM_getResourceText('shared.css');
   s.imgFormat = 'image/png';
   s.imgExts = {};
   s.imgExts['image/png']  = '.png';
@@ -169,28 +167,80 @@
       });
     }
 
+    // 網易雲音樂歌曲
+    // https://music.163.com/#/song?id=441491828
+    else if (location.hostname == 'music.163.com' && location.hash.startsWith('#/song')) {
+      var mainDoc = document.querySelector('#g_iframe').contentDocument;
+      var cover = mainDoc.querySelector('.u-cover img').getAttribute('src');
+      var title = mainDoc.querySelector('.tit').innerText.trim() + ' - ' + mainDoc.querySelector('.des a').innerText.trim();
+      var targetURL = location.toString();
+      var source = location.toString();
+      var offline = 'false';
+      var docString = fillTemplate(s.audioCoverTemplate, {
+        cover: cover,
+        title: title,
+        source: source,
+        offline: offline
+      });
+      downloadAsTextFile(docString, genID() + '.html', {
+        saveAs: true
+      }).then(function(result) {
+        console.log(result);
+      }).catch(function(e) {
+        console.error(e);
+      });
+    }
+
   }
   var genCover = s.genCover;
 
   if (/^file:\/\/.*\/idlery\/covers\/[^\/]+\.html$/.test(location.toString())) {
-    var shareID = genID();
-    var targetURL = $('meta[property="targetURL"]')[0].getAttribute('content');
-    var infoTable = $(`<table class="info">
-      <tr>
-        <td><strong>ID</strong></td>
-        <td>${shareID}</td>
-      </tr>
-      <tr>
-        <td><strong>Screenshot name</strong></td>
-        <td>${shareID}${s.imgExts[s.imgFormat]}</td>
-      </tr>
-      <tr>
-        <td><strong>HTML</strong></td>
-        <td>
-          &lt;p&gt;<br>&lt;a href="${targetURL}"&gt;&lt;img src="src/${shareID}${s.imgExts[s.imgFormat]}" width="400"&gt;&lt;/a&gt;&lt;/p&gt;
-        </td>
-      </tr>
-    </table>`)[0];
+    var shareType = $('meta[property="shareType"]')[0].getAttribute('content');
+    var shareID = location.toString().match(/([^\/]+)\.html$/)[1];
+    if (shareType == 'article') {
+      var targetURL = $('meta[property="targetURL"]')[0].getAttribute('content');
+      var infoTable = $(`<table class="info">
+        <tr>
+          <td><strong>ID</strong></td>
+          <td>${shareID}</td>
+        </tr>
+        <tr>
+          <td><strong>Screenshot name</strong></td>
+          <td>${shareID}${s.imgExts[s.imgFormat]}</td>
+        </tr>
+        <tr>
+          <td><strong>HTML</strong></td>
+          <td>
+            &lt;p&gt;<br>&lt;a href="${targetURL}"&gt;&lt;img src="src/${shareID}${s.imgExts[s.imgFormat]}" width="400"&gt;&lt;/a&gt;&lt;/p&gt;
+          </td>
+        </tr>
+      </table>`)[0];
+    } else if (shareType == 'audio') {
+      var source = $('.cover-source-url').text().trim();
+      var targetURL;
+      var offline = Boolean($('meta[property="offline"]')[0].getAttribute('content'));
+      if (offline == 'true') {
+        targetURL = source + '?raw=true';
+      } else {
+        targetURL = source;
+      }
+      var infoTable = $(`<table class="info">
+        <tr>
+          <td><strong>ID</strong></td>
+          <td>${shareID}</td>
+        </tr>
+        <tr>
+          <td><strong>Screenshot name</strong></td>
+          <td>${shareID}${s.imgExts[s.imgFormat]}</td>
+        </tr>
+        <tr>
+          <td><strong>HTML</strong></td>
+          <td>
+            &lt;p&gt;<br>&lt;a href="${targetURL}"&gt;&lt;img src="src/${shareID}${s.imgExts[s.imgFormat]}" width="400"&gt;&lt;/a&gt;&lt;/p&gt;
+          </td>
+        </tr>
+      </table>`)[0];
+    }
     $('body').append(infoTable);
     $('body').append(`<style>
       .info {
