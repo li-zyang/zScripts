@@ -16,7 +16,9 @@
 // @resource     onpageStyle        http://127.0.0.1/shimo-embrace-html/onpage-style.css
 // @resource     fontfaceStyle      http://127.0.0.1/shimo-embrace-html/font-faces.css
 // @resource     smModalTemplate    http://127.0.0.1/shimo-embrace-html/sm-modal-template.html
+// @resource     smConfirmTemplate  http://127.0.0.1/shimo-embrace-html/sm-confirm-template.html
 // @resource     importTestDoc      http://127.0.0.1/shimo-embrace-html/expr/import-test.html
+// @resource     importTestDocWS    http://127.0.0.1/shimo-embrace-html/expr/import-test-white-space.html
 // @grant        GM_setValue
 // @grant        GM_getValue
 // @grant        GM_deleteValue
@@ -53,6 +55,16 @@
 
   window.shimoEmbraceHtmlJS = {};
   var s = shimoEmbraceHtmlJS;
+
+  s.TimeoutError = function TimeoutError(what) {
+    Error.call(this, what);
+    this.name = 'TimeoutError';
+    // this.message = (what || '');
+  }
+  var TimeoutError = s.TimeoutError;
+
+  TimeoutError.prototype = Object.create(Error.prototype);
+  TimeoutError.prototype.constructor = TimeoutError;
 
   s.wait = function wait(discriminant, timeout) {
     var prop = {};
@@ -321,7 +333,7 @@
           asLeftIdx++;
         }
         if (asLeftIdx < pairs.length) {
-          symbolStack.push(asLeftPair.concat([i]));
+          symbolStack.push(asLeftPair);
         }
       }
       i += view.length;
@@ -339,6 +351,39 @@
     return text;
   }
   var html2Text = s.html2Text;
+
+  s.hasSameStyle = function hasSameStyle(elemA, elemB, config = {}) {
+    // cares & eqFuncs overrides ignores
+    var cares   = config.cares || [];
+    var eqFuncs = config.eqFuncs || [];    // { key, procFunc }
+    var ignores = config.ignores || ['perspective-origin', 'transform-origin'];
+    var styleA = getComputedStyle(elemA);
+    var styleB = getComputedStyle(elemB);
+    for (var i = 0; i < styleA.length; i++) {
+      var key = styleA[i];
+      if (cares.length && cares.indexOf(key) == -1) {
+        continue;
+      }
+      var eqFuncIdx = 0;
+      for (; eqFuncIdx < eqFuncs.length; eqFuncIdx++) {
+        if (eqFuncs[eqFuncIdx].key == key) { break; }
+      }
+      if (eqFuncIdx < eqFuncs.length) {
+        if (eqFuncs[eqFuncIdx].procFunc(styleA[key], styleB[key])) {
+          continue;
+        } else {
+          return false;
+        }
+      }
+      if (!cares.length && ignores.indexOf(key) != -1) {
+        continue;
+      }
+      if (styleA[key] != styleB[key]) {
+        return false;
+      }
+    }
+    return true;
+  }
 
   s.Kwargs = function Kwargs(kwargs) {
     kwargs = kwargs || {};
@@ -364,21 +409,28 @@
      *   combine: current-line;
      *   process-text: auto;
      *   combine-child: auto;
+     *   combine-next: auto;
      *   indent: obey;
      * }
      * [len(outer()) >= wrapWidth][display != inline],
-     * [has('\n')],
+     * :has('\n'),
      * [display !^= inline][display != list-item, table-cell] {
      *   innerNL: true;
      *   process-text: auto;
      * }
-     * [len(outer()) < wrapWidth]:not([has('\n')])[display ^= inline-][childCount() <= 1] {
+     * [len(outer()) < wrapWidth]:not(has('\n'))[display ^= inline-][childCount() <= 1] {
      *   innerNL: false;
      *   process-text: auto;
      * }
-     * [len(outer()) + len(before()) >= wrapWidth],
-     * [has('\n')] {
+     * [display !^= inline-][len(outer()) + len(before()) >= wrapWidth],
+     * [display !^= inline-]:has('\n'),
+     * :is(#text)[display ^= inline-][len(outer()) + len(before()) >= wrapWidth]:startsWith(/\s/),
+     * :is(#text)[display ^= inline-]:has('\n'):startsWith(/\s/) {
      *   combine: next-line;
+     * }
+     * :is(#text)[display ^= inline-][len(outer()) + len(before()) >= wrapWidth]:endsWith(/\s/),
+     * :is(#text)[display ^= inline-]:has('\n'):endWith(/\s/) {
+     *   combine-next: next-line;
      * }
      * head {
      *   combine-child: next-line;
@@ -391,7 +443,7 @@
      *   combine-child: current-line;
      *   process-text: none;
      * }
-     * [has('\n')][white-space = pre, pre-line, pre-wrap],
+     * :has('\n')[white-space = pre, pre-line, pre-wrap],
      * [display !^= inline][display != list-item, table-cell][white-space = pre, pre-line, pre-wrap] {
      *   indent: none;
      * }
@@ -658,44 +710,173 @@
   }) };
   var downloadAsTextFile = s.downloadAsTextFile;
 
-  s.fillTemplate = function fillTemplate(template, values = {}, patStart = '[SET[-', patEnd = '-]]') {
-    var res = '';
+  s.fillTemplate = function fillTemplate(template, values = {}, config = {}) {
+    var replacePat   = config.replacePat || ['[SET[-', '-]]'];
+    var copyPat      = config.copyPat    || ['[CPY@', '[-', '-]]'];
+    var expandPat    = config.expandPat  || ['[EXP@', '[-', '-]]'];  // reserved
+    var escapePrefix = config.escapePrefix || '\\p';
+    var extraSymbol  = config.extraSymbol || ['[[-']   // for indulgent escape, treated as common text
+    var symbols = replacePat.concat(copyPat).concat(expandPat).concat([escapePrefix]).concat(extraSymbol);
+    symbols = symbols.filter(function(v, i, a) {
+      return symbols.indexOf(v) == i;
+    });
+    symbols.sort(function (a, b) {
+      return b.length - a.length;
+    });
+    var firstChars = [];
+    for (var i = 0; i < symbols.length; i++) {
+      var sym = symbols[i];
+      if (firstChars.indexOf(sym.slice(0, 1)) == -1) {
+        firstChars.push(sym.slice(0, 1));
+      }
+    }
     var remain = template;
+    var chiefStack = [];
+    var ancilStack = [];
+    var expandExecs = [];
+    var prevExpandExecs = null;
+    var iterDepth = -1;
     while (remain.length) {
-      var patternIndex = remain.indexOf(patStart);
-      if (patternIndex != -1) {
-        res += remain.slice(0, patternIndex);
-        remain = remain.slice(patternIndex);
-        patternIndex = 0;
-      } else {
-        res += remain;
-        remain = '';
-        break;
-      }
-      var patternLength = remain.indexOf(patEnd) + patEnd.length;
-      var innerExpression;
-      if (patternLength >= patStart.length + patEnd.length) {
-        var nextPatternIndex = remain.slice(patStart.length).indexOf(patStart) + patStart.length;
-        if (nextPatternIndex >= patStart.length && nextPatternIndex < patternLength) {
-          res += remain.slice(0, nextPatternIndex);
-          remain = remain.slice(nextPatternIndex);
-          patternIndex = 0;
-          continue;
-        } else {
-          innerExpression = remain.slice(patStart.length, patternLength - patEnd.length);
+      var firstIdx = -1;
+      for (var i = 0; i < firstChars.length; i++) {
+        var ch = firstChars[i];
+        idx = remain.indexOf(ch);
+        if (idx != -1 && (firstIdx == -1 || idx < firstIdx)) {
+          firstIdx = idx;
         }
-      } else {
-        res += remain;
-        remain = '';
-        break;
       }
-      var exprFunc = new Function(`return (${innerExpression})`);
-      var replacement = exprFunc.call(values);
-      res += String(replacement);
-      remain = remain.slice(patternLength);
+      if (chiefStack.length && firstIdx == -1) {
+        chiefStack[chiefStack.length - 1] += remain;
+        remain = '';
+        var res = chiefStack.pop();
+        if (chiefStack.length) {
+          throw SyntaxError('Unmatched template symbol');
+        }
+        return res;
+      } else if (!chiefStack.length && firstIdx == -1) {
+        return template;
+      } else if (chiefStack.length) {
+        chiefStack[chiefStack.length - 1] += remain.slice(0, firstIdx);
+        remain = remain.slice(firstIdx);
+      } else {
+        chiefStack.push(remain.slice(0, firstIdx));
+        remain = remain.slice(firstIdx);
+      }
+      var matched = null;
+      for (var i = 0; i < symbols.length; i++) {
+        var cur = symbols[i];
+        var view = remain.slice(0, cur.length);
+        if (view == cur) {
+          matched = cur;
+          break;
+        }
+      }
+      if (!matched) {
+        chiefStack[chiefStack.length - 1] += remain.slice(0, 1);
+        remain = remain.slice(1);
+        continue;
+      }
+      if (matched == replacePat[0] || matched == copyPat[0] || matched == expandPat[0]) {
+        // throw into aucilStack if it is copyPat here
+        chiefStack.push(matched);
+        remain = remain.slice(matched.length);
+        continue;
+      } else if (
+        matched == replacePat[1] &&
+        chiefStack.length &&
+        chiefStack[chiefStack.length - 1].startsWith(replacePat[0])) 
+      {
+        var lastItem = chiefStack[chiefStack.length - 1];
+        chiefStack.pop();
+        var innerExpression = lastItem.slice(replacePat[0].length).replace(/;\s*$/, '');
+        var result = (new Function(`return (${innerExpression})`).bind(values))();
+        chiefStack[chiefStack.length - 1] += String(result);
+        remain = remain.slice(matched.length);
+        continue;
+      } else if (
+        matched == copyPat[1] && 
+        chiefStack.length && 
+        chiefStack[chiefStack.length - 1].startsWith(copyPat[0])) 
+      {
+        iterDepth++;
+        chiefStack[chiefStack.length - 1] += copyPat[1];
+        remain = remain.slice(matched.length);
+      } else if (
+        matched == copyPat[2] &&
+        chiefStack.length &&
+        chiefStack[chiefStack.length - 1].startsWith(copyPat[0]))
+      {
+        var lastItem = chiefStack[chiefStack.length - 1];
+        var iter = lastItem.slice(
+          copyPat[0].length,
+          lastItem.slice(copyPat[0].length).indexOf(copyPat[1]) + copyPat[0].length
+        );
+        var iterObject = (new Function(`return (${iter})`).bind(values))();
+        var expanded = '';
+        for (var i = 0; i < iterObject.length; i++) {
+          expanded += `${expandPat[0]}var $${iterDepth}=${i};${expandPat[1]}`;
+          expanded += lastItem.slice(copyPat[0].length + iter.length + copyPat[1].length);
+          expanded += expandPat[2];
+        }
+        iterDepth--;
+        chiefStack.pop();
+        remain = remain.slice(matched.length);
+        remain = expanded + remain;
+      } else if (
+        matched == expandPat[1] &&
+        chiefStack.length &&
+        chiefStack[chiefStack.length - 1].startsWith(expandPat[0])) 
+      {
+        var lastItem = chiefStack[chiefStack.length - 1];
+        var exec = lastItem.slice(expandPat[0].length).replace(/;\s*$/, '');
+        prevExpandExecs = [...expandExecs];
+        expandExecs.push(exec);
+        chiefStack[chiefStack.length - 1] += expandPat[1];
+        remain = remain.slice(matched.length);
+      } else if (
+        matched == expandPat[2] &&
+        chiefStack.length &&
+        chiefStack[chiefStack.length - 1].startsWith(expandPat[0])) 
+      {
+        var preExec = expandExecs.join(';');
+        var lastItem = chiefStack[chiefStack.length - 1];
+        var innerExpression = lastItem.slice(lastItem.indexOf(expandPat[1]) + expandPat[1].length).replace(/;\s*$/, '');
+        var result = (new Function(`${preExec};return(${innerExpression})`).bind(values));
+        chiefStack.pop();
+        chiefStack[chiefStack.length - 1] += String(result);
+        prevExpandExecs = [...expandExecs];
+        expandExecs.pop();
+        remain = remain.slice(expandPat[2].length);
+      } else if (matched == escapePrefix) {
+        remain = remain.slice(escapePrefix.length);
+        var nextSymbol = null;
+        for (var i = 0; i < symbols.length; i++) {
+          var cur = symbols[i];
+          var view = remain.slice(0, cur.length);
+          if (cur == view) {
+            nextSymbol = cur;
+            break;
+          }
+        }
+        if (nextSymbol) {
+          chiefStack[chiefStack.length - 1] += nextSymbol;
+          remain = remain.slice(nextSymbol.length);
+        } else {
+          throw SyntaxError('Invalid escape: ' + escapePrefix + remain.slice(0, 5) + '...');
+        }
+      } else if (extraSymbol.indexOf(matched) != -1) {
+        chiefStack[chiefStack.length - 1] += matched;
+        remain = remain.slice(matched.length);
+      } else {
+        throw SyntaxError('Unmatched template symbol');
+      }
+    }
+    var res = chiefStack.pop();
+    if (chiefStack.length) {
+      throw SyntaxError('Unmatched template symbol');
     }
     return res;
-  };
+  }
   var fillTemplate = s.fillTemplate;
 
   s.convertImage = function convertImage(src, targetType, config = {}) { return new Promise(function(resolve, reject) {
@@ -1301,6 +1482,42 @@
     return null;
   }
 
+  s.smConfirm = function smConfirm(a, b, c) { return new Promise(function (resolve, reject) {
+    var title;
+    var message;
+    var config;
+    if (a && b) {
+      [title, message, config] = [a, b, (c || {})];
+    } else if (a) {
+      [title, message, config] = ['确认', a, (b || {})];
+    } else {
+      throw TypeError('Invalid argument');
+    }
+    var trueButtonText  = config.trueButtonText  || '确认';
+    var falseButtonText = config.falseButtonText || '取消';
+    var source = fillTemplate(s.smConfirmTemplate, {
+      title: title,
+      message: message,
+      trueButtonText: trueButtonText,
+      falseButtonText: falseButtonText
+    });
+    var root = $(source)[0];
+    document.body.appendChild(root);
+    $(root).find('.sm-modal-close').on('click', function() {
+      $(root).remove();
+      reject(null);
+    });
+    $(root).find('.sehJS-btn-confirm').on('click', function () {
+      $(root).remove();
+      resolve(true);
+    });
+    $(root).find('.sehJS-btn-cancel').on('click', function() {
+      $(root).remove();
+      resolve(false);
+    });
+  }) }
+  var smConfirm = s.smConfirm;
+
   s.patch = function patch(rootNode) { return new Promise(function(resolve, reject) {
     s.epProcWindow.console.log('applying patches');
     var $docBodyElem = $(rootNode).find('.ql-editor');
@@ -1316,7 +1533,7 @@
   }) }
   var patch = s.patch;
 
-  s.processDocument = function processDocument(source, options = {}) { return new Promise(function(resolve, reject) {
+  s.processExportDoc = function processExportDoc(source, options = {}) { return new Promise(function(resolve, reject) {
     s.epProcWindow.console.log('processing exported code');
     var parser = new DOMParser();
     var doc = parser.parseFromString(source, 'text/html');
@@ -1441,7 +1658,7 @@
     }
   }).then(function(solidfiedSource) { return new Promise(function(resolve, reject) {
     s.epProcWindow.console.log('Injecting processed code');
-    var $containerFrame = $('<iframe class="sehJS" src="about:blank" />');
+    var $containerFrame = $('<iframe class="sehJS sehJS-export-frame" src="about:blank">');
     $('body').append($containerFrame);
     var doc = $containerFrame[0].contentDocument;
     doc.write(solidfiedSource);
@@ -1460,7 +1677,7 @@
     $containerFrame.remove();
     resolve('<!DOCTYPE html>\n' + exported);
   }) }) }
-  var processDocument = s.processDocument;
+  var processExportDoc = s.processExportDoc;
 
   s.exportCurrentFile = function exportCurrentFile() { return new Promise(function(resolve, reject) {
     if (!s.epProcWindow) {
@@ -1487,7 +1704,7 @@
       docRobotInstruction: s.docRobotInstruction,
       docBody: s.rawDocContent
     });
-    passOnPromise(processDocument, resolve, reject, docString);
+    passOnPromise(processExportDoc, resolve, reject, docString);
   }) }).then(function(finalDocument) { return new Promise(function (resolve, reject) {
     s.epProcWindow.console.log('document is ready. downloading...');
     passOnPromise(downloadAsTextFile, resolve, reject, finalDocument, `${s.docTitle}.html`);
@@ -1502,24 +1719,131 @@
   }) };
   var exportCurrentFile = s.exportCurrentFile;
 
-  s.injectIntoCurrent = function injectIntoCurrent(source, config) { return new Promise(function (resolve, reject) {
-    var parser = new DOMParser();
-    var doc = parser.parseFromString(source, 'text/html');
-    var docTitleText = doc.querySelector('.doc-title').value;
-    var docBodyElems = doc.querySelectorAll('.doc-body > *');
-    var $titleInput = $('#editor #ql-title-input');
-    $titleInput.value(docTitleText);
-    var $qlEditor = $('')
+  s.processImportDoc = function processImportDoc(source, config) { var g = {}; return new Promise(function(resolve, reject) {
+    console.log('parsing document');
+    g.$containerFrame = $('<iframe class="sehJS sehJS-import-frame" src="about:blank">');
+    $('body').append(g.$containerFrame);
+    g.doc = g.$containerFrame[0].contentDocument;
+    var doc = g.doc;
+    doc.write(source);
+    doc.close();
+    console.log('getting title');
+    var docTitle = doc.querySelector('.doc-title');
+    g.titleText = docTitle.value;
+    console.log('processing body');
+    var docBody = doc.querySelector('.doc-body');
+    console.log('removing white spaces');
+    var stateQueue = [];
+    var rootChildNodes = docBody.childNodes;
+    var rootStyle = getComputedStyle(docBody);
+    for (var i = 0; i < rootChildNodes.length; i++) {
+      var cur = rootChildNodes[i];
+      stateQueue.push({
+        node: cur,
+        inheritedStyle: rootStyle
+      });
+    }
+    while(stateQueue.length) {
+      var cur = stateQueue.shift();
+      if (cur.node.tagName) {
+        var children = cur.node.childNodes;
+        var curStyle = getComputedStyle(cur.node);
+        for (var i = 0; i < children.length; i++) {
+          var curChild = children[i];
+          stateQueue.push({
+            node: curChild,
+            inheritedStyle: curStyle
+          });
+        }
+      } else if (cur.node.nodeName == '#text') {
+        var text = cur.node.nodeValue;
+        if (/^\s*$/.test(text)) {
+          if (cur.inheritedStyle == 'pre' || cur.inheritedStyle == 'pre-wrap') {
+            ;
+          } else if (cur.inheritedStyle == 'pre-line') {
+            cur.node.nodeValue = cur.node.nodeValue.replace(/[\t ]/g, '');
+          } else {
+            cur.node.remove();
+          }
+        }
+      } else {
+        cur.node.remove();
+      }
+    }
+    g.bodyElems = docBody.children;
+    console.log('converting hash links');
+    var hyperlinks = doc.querySelectorAll('.doc-root a');
+    for (var i = 0; i < hyperlinks.length; i++) {
+      var aNode = hyperlinks[i];
+      aNode.setAttribute('href', aNode.href);
+      aNode.setAttribute('target', '_blank');
+      aNode.removeAttribute('rel', 'noopener noreferrer nofollow');
+    }
+    console.log('converting line IDs');
+    var paragraphs = doc.querySelectorAll('.doc-root [id^="anchor-"]');
+    for (var i = 0; i < paragraphs.length; i++) {
+      var pNode = paragraphs[i];
+      pNode.setAttribute('line', pNode.id.replace(/^anchor-/, ''));
+    }
+    // g.$containerFrame.remove();
+    resolve([g.titleText, g.bodyElems]);
   }) }
+  var processImportDoc = s.processImportDoc;
+
+  s.injectIntoCurrent = function injectIntoCurrent(source, config) { return new Promise(function(resolve, reject) {
+    if (!$('.ql-editor').length) {
+      console.log('waiting until the page finishes loading...');
+    }
+    passOnPromise(wait, resolve, reject, () => $('.ql-editor').length);
+  }).then(function() { return new Promise(function (resolve, reject) {
+    console.info('starting...');
+    var $titleInput = $('#editor #ql-title-input');
+    var $qlEditor   = $('#editor .ql-editor');
+    if (
+      $titleInput.val() != '无标题' ||
+      !/^\s*/.test($qlEditor.text())) 
+    {
+      passOnPromise(smConfirm, resolve, reject, '覆盖非空文档', '此文档非空，是否覆盖当前内容？');
+    } else {
+      resolve(true);
+    }
+  }) }).then(function(selected) { return new Promise(function(resolve, reject) {
+    if (!selected) {
+      reject(null);
+    } else {
+      passOnPromise(processImportDoc, resolve, reject, source);
+    }
+  }) }).then(function(docData) { return new Promise(function(resolve, reject) {
+    console.log('process of document finished, injecting');
+    var $titleInput = $('#editor #ql-title-input');
+    var $qlEditor = $('#editor .ql-editor');
+    var [titleText, bodyElems] = docData;
+    $titleInput.val(titleText);
+    $qlEditor.find('*').remove();
+    $qlEditor.append($(bodyElems));
+    var ev = new ClipboardEvent('paste');
+    $qlEditor[0].dispatchEvent(ev);
+    console.info('importation done.');
+    console.warn('you may need to wait a few seconds before you reload this page.');
+    resolve();
+  }) }).catch(function(e) {
+    if (e == null) {
+      console.info('importation canceled');
+    }
+    reject(e);
+  }) }
+  var injectIntoCurrent = s.injectIntoCurrent;
 
   s.docExportTemplate = GM_getResourceText('docExportTemplate');
   s.exportStyle       = GM_getResourceText('exportStyle');
   s.onpageStyle       = GM_getResourceText('onpageStyle');
   s.fontfaceStyle     = GM_getResourceText('fontfaceStyle');
   s.smModalTemplate   = GM_getResourceText('smModalTemplate');
+  s.smConfirmTemplate = GM_getResourceText('smConfirmTemplate');
   s.importTestDoc     = GM_getResourceText('importTestDoc');
+  s.importTestDocWS   = GM_getResourceText('importTestDocWS');
 
-  $('html').append($('<style class="sehJS" />').html(s.onpageStyle));
+  $('head link:first-of-type').before($('<style class="sehJS" />').html(s.onpageStyle));
 
 })(window.unsafeWindow, $);
 

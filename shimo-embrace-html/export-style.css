@@ -45,7 +45,7 @@ body {
   background: transparent;
 }
 .doc-body {
-  white-space: normal !important;
+  white-space: normal;
   padding: 20px 0px 100px 0px;
   font-size: 11pt;
   line-height: 1.7;
@@ -379,6 +379,7 @@ body {
   padding-left: 10px;
   padding-right: 10px;
   outline: none;
+  white-space: pre-wrap;
 }
 .doc-body div.ql-code-block:last-child {
   padding-bottom: 4px;

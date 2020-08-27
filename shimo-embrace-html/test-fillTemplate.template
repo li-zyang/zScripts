@@ -1,0 +1,19 @@
+Object which the proxy virtualizes. It is often used as storage backend for the proxy. Invariants (semantics that remain unchanged) regarding object non-extensibility or non-configurable properties are verified against the target.
+
+Including parentheses in a regular expression pattern causes the corresponding submatch to be remembered. For example, /a(b)c/ matches the characters 'abc' and remembers 'b'. To recall these parenthesized substring matches, use the Array elements [1], ..., [n].
+
+You can use \\p[SET[-<expression>\\p-]] to indicate the area to be replaced, and \\p[CPY@<array-like object>\\p[-<expression>\\p-]] to define a copy container connected with an array, with variable $i (i = 0, 1, 2, ...) set to the iteration count; With the "\\p\\p" prefix, special symbols like "\\p[SET[-" and "\\p-]]" (and also the "\\p\\p" itself) can be safely included in the template.
+
+var values = {}; values.ID = BananaJS.genID();
+\\p[[- 萬年曆 \\p-]][SET[-(function() {
+  this.now = new Date;
+  return '';
+}).call(this);-]] 製 [SET[-this.ID-]]
+日期：[SET[-this.now.getFullYear()-]] 年 [SET[-this.now.getMonth() + 1-]] 月 [SET[-this.now.getDate()-]] 日
+      星期[SET[-'日一二三四五六'.charAt(this.now.getDay())-]] [SET[-(function() {this.timezone = this.now.getTimezoneOffset() / 60; return ''; }).call(this)-]] UTC[SET[- this.timezone < 0 ? ('+' + (-this.timezone)) : (-this.timezone) -]]
+時間：[SET[-this.now.getHours()-]]:[SET[-this.now.getMinutes()-]]:[SET[-this.now.getSeconds()-]]
+
+var values = {}; values.row = new Array(7); values.col = new Array(8);
+[CPY@this.row[-
+  "[CPY@this.col[-$0 * this.col.length + $1-]]" + '\n'
+-]]
