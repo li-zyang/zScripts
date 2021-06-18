@@ -732,10 +732,11 @@
     }
     var remain = template;
     var chiefStack = [];
-    var ancilStack = [];
+    var aucilStack = [];
     var expandExecs = [];
     var prevExpandExecs = null;
-    var iterDepth = -1;
+    var maxIterDepth = 0;
+    var expandedIter = 0;
     while (remain.length) {
       var firstIdx = -1;
       for (var i = 0; i < firstChars.length; i++) {
@@ -776,9 +777,22 @@
         remain = remain.slice(1);
         continue;
       }
-      if (matched == replacePat[0] || matched == copyPat[0] || matched == expandPat[0]) {
+      if (matched == replacePat[0] || matched == expandPat[0]) {
         // throw into aucilStack if it is copyPat here
         chiefStack.push(matched);
+        remain = remain.slice(matched.length);
+        continue;
+      } else if (matched == copyPat[0]) {
+        if (expandedIter == 0) {
+          maxIterDepth++;
+        }
+        var lastItem = chiefStack[chiefStack.length - 1];
+        if (lastItem.startsWith(copyPat[0])) {
+          chiefStack[chiefStack.length - 1] += matched;
+        } else {
+          chiefStack.push(matched);
+        }
+        aucilStack.push(matched);
         remain = remain.slice(matched.length);
         continue;
       } else if (
@@ -798,30 +812,40 @@
         chiefStack.length && 
         chiefStack[chiefStack.length - 1].startsWith(copyPat[0])) 
       {
-        iterDepth++;
         chiefStack[chiefStack.length - 1] += copyPat[1];
+        aucilStack[aucilStack.length - 1] += copyPat[1];
         remain = remain.slice(matched.length);
       } else if (
         matched == copyPat[2] &&
         chiefStack.length &&
         chiefStack[chiefStack.length - 1].startsWith(copyPat[0]))
       {
-        var lastItem = chiefStack[chiefStack.length - 1];
-        var iter = lastItem.slice(
-          copyPat[0].length,
-          lastItem.slice(copyPat[0].length).indexOf(copyPat[1]) + copyPat[0].length
-        );
-        var iterObject = (new Function(`return (${iter})`).bind(values))();
-        var expanded = '';
-        for (var i = 0; i < iterObject.length; i++) {
-          expanded += `${expandPat[0]}var $${iterDepth}=${i};${expandPat[1]}`;
-          expanded += lastItem.slice(copyPat[0].length + iter.length + copyPat[1].length);
-          expanded += expandPat[2];
+        aucilStack.pop();
+        if (!aucilStack.length) {
+          var lastItem = chiefStack[chiefStack.length - 1];
+          var iter = lastItem.slice(
+            copyPat[0].length,
+            lastItem.slice(copyPat[0].length).indexOf(copyPat[1]) + copyPat[0].length
+          );
+          var iterObject = (new Function(`return (${iter})`).bind(values))();
+          var expanded = '';
+          for (var i = 0; i < iterObject.length; i++) {
+            expanded += `${expandPat[0]}var $${expandedIter}=${i};${expandPat[1]}`;
+            expanded += lastItem.slice(copyPat[0].length + iter.length + copyPat[1].length);
+            expanded += expandPat[2];
+          }
+          chiefStack.pop();
+          remain = remain.slice(matched.length);
+          remain = expanded + remain;
+          expandedIter++;
+          if (expandedIter == maxIterDepth) {
+            expandedIter = 0;
+            maxIterDepth = 0;
+          }
+        } else {
+          chiefStack[chiefStack.length - 1] += matched;
+          remain = remain.slice(matched.length);
         }
-        iterDepth--;
-        chiefStack.pop();
-        remain = remain.slice(matched.length);
-        remain = expanded + remain;
       } else if (
         matched == expandPat[1] &&
         chiefStack.length &&
