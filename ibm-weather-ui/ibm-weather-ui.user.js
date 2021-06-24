@@ -3,7 +3,7 @@
 // @name:ZH-CN   IBM-Weather-UI
 // @name:ZH-TW   IBM-Weather-UI
 // @namespace    https://github.com/li-zyang
-// @version      1.0.0
+// @version      1.0.1
 // @description  An enchanced UI for weather.com
 // @description:ZH-CN  一个用于 weather.com 的优化 UI
 // @description:ZH-TW  一個用於 weather.com 的優化 UI
@@ -108,6 +108,18 @@
     [class*="MainMenuHeader--wrapper--"] {
       height: auto;
     }
+    [class*="AirQuality--AirQualityCard--"] {
+      height: 270px;
+      padding-left: 40px;
+      padding-right: 40px;
+    }
+    [class*="AirQuality--leftCol--"],
+    [class*="AirQuality--center--"] {
+      width: 100% !important;
+      flex-direction: column !important;
+      justify-content: center !important;
+      align-items: center !important;
+    }
     [class*="AirQuality--leftCol--"] [class*="AirQuality--col--"]:first-of-type {
       width: 180px;
       height: 180px;
@@ -118,28 +130,21 @@
       transform: scale(3);
       transform-origin: 0 0;
     }
-    [class*="AirQuality--AirQualityCard--"] {
-      height: 270px;
-    }
-    [class*="AirQuality--leftCol--"],
-    [class*="AirQuality--center--"] {
-      width: 100% !important;
-      flex-direction: column !important;
-      justify-content: center !important;
-      align-items: center !important;
+    [class*="DonutChart--innerValue--"] {
+      font-size: 1.6em;
     }
     [class*="AirQuality--sm--"] [class*="AirQuality--leftCol--"] [class*="AirQuality--col--"]:last-of-type {
       padding: 0px !important;
       margin: 10px 0px 10px 0px;
     }
-    [class*="DonutChart--innerValue--"] {
-      font-size: 1.6em;
+    [class*="AirQualityText--severity--"] {
+      padding-bottom: 7px;
     }
     [dir] [class*="gradients--cloudyFoggyDay-contrast--"] {
       background-image: linear-gradient(#6e3f98,#a37697) !important;
     }
-    [dir] [class*="gradients--rainyDay-contrast--"] {
-      background-image: linear-gradient(#004f69,#238665) !important;
+    [dir] [class*="gradients--clearNight-contrast--"] {
+      background-image: linear-gradient(#113076,#135899) !important;
     }
     [class*="TodayDetailsCard--detailsContainer--"] {
       margin-bottom: 16px;
